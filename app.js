@@ -4,7 +4,7 @@ const addBtn = document.getElementById("add-btn");
 const todoList = document.getElementById("todo-list");
 
 let todos = [];
-const API_URL = "http://localhost:3000/todolists";
+const API_URL = "https://todo-app-j20w.onrender.com/todoLists";
 
 
 // async function fetchTodos() {
