@@ -3,24 +3,29 @@ const timeInput = document.getElementById("todo-time");
 const addBtn = document.getElementById("add-btn");
 const todoList = document.getElementById("todo-list");
 
+const API_URL = "https://api-server-a6k1.onrender.com/todolists";
+
 let todos = [];
-const API_URL = "https://todo-app-j20w.onrender.com/todoLists";
 
-
+// Lấy tất cả todos
 async function fetchTodos() {
-  const res = await fetch(API_URL);
-  todos = await res.json();
-  renderTodos();
+  try {
+    const res = await fetch(API_URL);
+    todos = await res.json();
+    renderTodos();
+  } catch (err) {
+    console.error("Fetch error:", err);
+  }
 }
 
+// Render danh sách
 function renderTodos() {
   todoList.innerHTML = "";
   const now = new Date();
 
-  todos.forEach((todo) => {
+  todos.forEach(todo => {
     const li = document.createElement("li");
     const deadline = new Date(todo.deadline);
-    const deadlineText = deadline.toLocaleString();
     const overdue = deadline < now && !todo.done;
 
     li.className = overdue ? "overdue" : "";
@@ -30,137 +35,79 @@ function renderTodos() {
         <span style="text-decoration:${todo.done ? 'line-through' : 'none'}">
           ${todo.text}
         </span>
-        <small>🕒 ${deadlineText}</small>
+        <small>🕒 ${deadline.toLocaleString()}</small>
       </div>
       <div>
-        <button onclick="toggleDone(${todo.id})">✔</button>
-        <button onclick="deleteTodo(${todo.id})">✖</button>
+        <button class="done-btn">✔</button>
+        <button class="delete-btn">✖</button>
       </div>
     `;
+
+    // Add event listeners cho nút
+    li.querySelector(".done-btn").addEventListener("click", () => toggleDone(todo._id));
+    li.querySelector(".delete-btn").addEventListener("click", () => deleteTodo(todo._id));
+
     todoList.appendChild(li);
   });
 }
 
-// Thêm (POST)
+// Thêm todo
 async function addTodo() {
   const text = input.value.trim();
   const deadline = timeInput.value;
 
-  if (text && deadline) {
-    const newTodo = { text, done: false, deadline };
+  if (!text || !deadline) return;
 
+  const newTodo = { text, done: false, deadline };
+  try {
     const res = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newTodo)
     });
-
     const data = await res.json();
     todos.push(data);
-
     input.value = "";
     timeInput.value = "";
+    renderTodos();
+  } catch (err) {
+    console.error("Add error:", err);
   }
-  renderTodos();
 }
 
-// Xóa (DELETE)
+// Xóa todo
 async function deleteTodo(id) {
-  await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-  todos = todos.filter(todo => todo.id !== id);
-  renderTodos();
+  try {
+    await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+    todos = todos.filter(todo => todo._id !== id);
+    renderTodos();
+  } catch (err) {
+    console.error("Delete error:", err);
+  }
 }
 
-//làm xong(patch)
+// Toggle done
 async function toggleDone(id) {
-  const todo = todos.find(t => t.id === id);
-  const updated = { ...todo, done: !todo.done };
+  const todo = todos.find(t => t._id === id);
+  const updatedDone = !todo.done;
 
-  await fetch(`${API_URL}/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ done: updated.done })
-  });
-
-  todo.done = updated.done;
-renderTodos();
+  try {
+    await fetch(`${API_URL}/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ done: updatedDone })
+    });
+    todo.done = updatedDone;
+    renderTodos();
+  } catch (err) {
+    console.error("Toggle error:", err);
+  }
 }
+
+// Sự kiện thêm todo
 addBtn.addEventListener("click", addTodo);
-input.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") addTodo();
-});
-timeInput.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") addTodo();
-});
+input.addEventListener("keypress", e => { if (e.key === "Enter") addTodo(); });
+timeInput.addEventListener("keypress", e => { if (e.key === "Enter") addTodo(); });
+
+// Khởi tạo
 fetchTodos();
-// axiosTodos();
-// async function axiosTodos(){
-//   var res = await axios.get(API_URL);
-//   todos = await res.data;
-//   renderTodos();
-// }
-// function renderTodos() {
-//   todoList.innerHTML = "";
-//   const now = new Date();
-
-//   todos.forEach((todo) => {
-//     const li = document.createElement("li");
-//     const deadline = new Date(todo.deadline);
-//     const deadlineText = deadline.toLocaleString();
-//     const overdue = deadline < now && !todo.done;
-
-//     li.className = overdue ? "overdue" : "";
-
-//     li.innerHTML = `
-//       <div>
-//         <span style="text-decoration:${todo.done ? 'line-through' : 'none'}">
-//           ${todo.text}
-//         </span>
-//         <small>🕒 ${deadlineText}</small>
-//       </div>
-//       <div>
-//         <button onclick="toggleDone(${todo.id})">✔</button>
-//         <button onclick="deleteTodo(${todo.id})">✖</button>
-//       </div>
-//     `;
-//     todoList.appendChild(li);
-//   });
-// }
-
-// async function addTodo() {
-//   const text = input.value.trim();
-//   const deadline = timeInput.value;
-
-//   if (text && deadline) {
-//     const newTodo = { text, done: false, deadline };
-
-//     try {
-//       const res = await axios.post(API_URL, {
-//         text: text,
-//         done: false,
-//         deadline: deadline
-//       });
-//     } catch (err) {
-//       console.error("POST error:", err.message);
-//     }
-//   }
-// }
-// async function deleteTodo(id){
-//   try {
-//     const res = await axios.delete(`${API_URL}/${id}`);
-//     console.log("DELETE status:", res.status); 
-//   } catch (err) {
-//     console.error("DELETE error:", err.message);
-//   }
-// }
-// async function toggleDone(id) {
-//   var todo = todos.find(t => t.id === id);
-//   var update = { ...todo, done: !todo.done};
-//   try {
-//     const res = await axios.patch(`${API_URL}/${id}`,{ done : update.done});
-
-//   }
-//   catch (err) {
-//     console.error("DELETE error:", err.message);
-//   }
-// }
